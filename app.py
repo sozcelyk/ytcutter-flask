@@ -3,6 +3,7 @@ import re
 import subprocess
 import tempfile
 from flask import Flask, request, send_file, render_template_string
+import urllib.parse
 
 app = Flask(__name__)
 
@@ -30,7 +31,6 @@ HTML = """
     <h1>YT Cutter</h1>
     <label for="yt-url">YouTube Video Linki</label>
     <input type="text" id="yt-url" name="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" required>
-
     <div class="input-row">
       <div>
         <label for="start">Başlangıç (mm:ss)</label>
@@ -51,6 +51,12 @@ def mmss_to_seconds(mmss):
     m, s = mmss.split(':')
     return int(m) * 60 + int(s)
 
+def clean_yt_url(url):
+    parsed = urllib.parse.urlparse(url)
+    q = urllib.parse.parse_qs(parsed.query)
+    video_id = q.get('v', [''])[0]
+    return f"https://www.youtube.com/watch?v={video_id}" if video_id else url
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'GET':
@@ -67,14 +73,15 @@ def index():
     if duration <= 0:
         return "Bitiş, başlangıçtan büyük olmalı.", 400
 
+    cleaned_url = clean_yt_url(url)
+
     with tempfile.TemporaryDirectory() as tmpdir:
         video_path = os.path.join(tmpdir, 'input.webm')
         output_path = os.path.join(tmpdir, f'output_{start_sec}_{end_sec}.mp4')
-        # Videoyu indir
+        # Videoyu indir (format seçmeden)
         yt_dlp_cmd = [
             'yt-dlp',
-            '-f', 'bestvideo[ext=webm]+bestaudio/best[ext=webm]/best',
-            url,
+            cleaned_url,
             '-o', video_path
         ]
         try:
@@ -97,7 +104,6 @@ def index():
             return f"ffmpeg hatası: {e}", 500
         # İndir
         return send_file(output_path, as_attachment=True, download_name=f'ytcutter_{start_sec}_{end_sec}.mp4')
-
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
