@@ -98,5 +98,7 @@ def index():
         # İndir
         return send_file(output_path, as_attachment=True, download_name=f'ytcutter_{start_sec}_{end_sec}.mp4')
 
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5090)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
