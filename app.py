@@ -1,7 +1,9 @@
 import subprocess
 from flask import Flask
 
+
 app = Flask(__name__)
+
 
 @app.route('/')
 def index():
@@ -13,6 +15,7 @@ def index():
         return "<pre>" + result.stdout + "\n" + result.stderr + "</pre>"
     except Exception as e:
         return f"Hata: {e}"
+
 
 if __name__ == '__main__':
     import os
